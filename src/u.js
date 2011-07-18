@@ -3,44 +3,61 @@
 *
 * Utils
 */
-var u = {};
+var u = { guid: 1 };
 
 
 // MISC
-var trans = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#x27;'
-};
 function escapeHTML(html) {
-  return (html + '').replace(/[&<>\"\']/g, function(c) { return trans[c]; });
+  return (html + '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 u.escapeHTML = escapeHTML;
 
 u.extend = function() {
   var target = arguments[0] || {};
-  var i = 1;
-  var length = arguments.length;
-  var options;
-  for (; i < length; i++) {
-    if (options = arguments[i]) {
-      for (var name in options) {
-        if (!options.hasOwnProperty(name)) {
-          continue;
-        }
-        var copy = options[name];
-
-        if (copy !== undefined) {
-          target[name] = copy;
-        }
+  for (var i = 1; i < arguments.length; i++) {
+    var options = arguments[i];
+    for (var name in options || {}) {
+      if (options[name] !== undefined) {
+        target[name] = options[name];
       }
     }
   }
-  return target;  
+  return target;
 };
+
+u.bindOnce = function(fun, context) {
+  fun.huid = fun.huid || u.guid++;
+  var bindingName = '__bind_' + fun.huid;
+  context[bindingName] = context[bindingName] || fun.bind(context);
+  return context[bindingName];
+};
+
+function _timer(fun, timeout, debounce) {
+  var running;
+  return function() {
+    // last call params
+    var context = this;
+    var args = arguments;
+
+    if (debounce && running) {
+      running = clearTimeout(running);
+    }
+    running = running || setTimeout(function() {
+      running = null;
+      fun.apply(context, args);
+    }, timeout);
+  };
+}
+
+u.throttle = function(fun, timeout) {
+    return _timer(fun, timeout);
+};
+
+u.debounce = function(fun, timeout) {
+    return _timer(fun, timeout, true);
+};
+
 
 // className
 var cls = u.cls = {
@@ -114,22 +131,22 @@ u.is = {
   element: function(object) {
     return !!(object && object.nodeType == 1);
   }
-}
+};
 
-([
-  ['func',   'Function'],
+[
+  ['fun',   'Function'],
   ['array',  'Array'],
   ['bool',   'Boolean'],
   ['number', 'Number'],
   ['string', 'String'],
   ['date',   'Date'],
   ['number', 'Number']
-]).forEach(function(pair) {
+].forEach(function(pair) {
   var typeName = '[object ' + pair[1] + ']';
   u.is[pair[0]] = function(object) {
     return Object.prototype.toString.call(object) === typeName;
   };
 });
-  
+
 
 module.exports = u;

@@ -4,17 +4,18 @@
 * View
 */
 var u = require('./u');
+var m = require('./m');
 var _toString = Object.prototype.toString;
 
 function v(markup, refs) {
   if (u.is.view(markup) || u.is.element(markup)) {
     return markup;
   }
-  
-  var item = markup.view ? 
-    createView(markup) : 
+
+  var item = markup.view ?
+    createView(markup) :
     createElement(markup);
-    
+
   for (var key in markup) {
     var value = markup[key];
     switch (key) {
@@ -71,27 +72,25 @@ v.nearest = function(element) {
     if (element['data-view']) { return element['data-view']; }
     element = element.parentNode;
   }
-  return null;  
+  return null;
 };
 
 
 var Base = v.Base = function(markup) {
   this._setup(markup);
-  this._createDom();
+  this._createDom(markup);
   this._init();
 };
 var bp = Base.prototype;
-Object.defineProperty(bp, 'isView', { 
-  value: true, 
-  configurable: true,
-  enumerable: true });
-Object.defineProperty(bp, 'dom', { 
-  writable: true, 
+Object.defineProperty(bp, 'isView', {
+  value: true,
   configurable: true,
   enumerable: true });
 
+bp.dom = null;
+
 [
-  'className', 'parentNode', 'children', 
+  'className', 'parentNode', 'children',
   'innerHTML', 'scrollLeft', 'scrollTop'
 ].forEach(function(name) {
    u.delegate.prop(bp, name, 'dom');
@@ -101,8 +100,8 @@ u.delegate.call(bp, 'getBoundingClientRect', 'dom');
 
 bp._setup = function(markup) {};
 
-bp._createDom = function() {
-  this.dom = v({ tag: 'div' });
+bp._createDom = function(markup) {
+  this.dom = v({ tag: markup.tag || 'div' });
 };
 
 bp._init = function() {
@@ -140,14 +139,14 @@ bp.replaceChild = function(child, refChild) {
   return child;
 };
 
-Object.defineProperty(bp, 'parentView', { 
+Object.defineProperty(bp, 'parentView', {
   configurable: true,
   enumerable: true,
   get: function() {
     return v.nearest(this.parentNode);
   } });
-  
-Object.defineProperty(bp, 'childViews', { 
+
+Object.defineProperty(bp, 'childViews', {
   configurable: true,
   enumerable: true,
   get: function() {
@@ -155,6 +154,28 @@ Object.defineProperty(bp, 'childViews', {
       return u.is.view(child);
     });
   } });
-
+  
+Object.defineProperty(bp, 'model', {
+  configurable: true,
+  enumerable: true,
+  get: function() {
+    return this._binding && this._binding.model;
+  },
+  set: function(model) {
+    this.bind(model);
+  } });
+  
+bp.defaultBindingOptions = {};
+bp.bind = function(model, options) {
+  if (this._binding) this._binding.destruct();
+  if (model) {
+    options = u.extend(this.defaultBindingOptions, options);
+    options.model = model;
+    options.view = this;
+    this._binding = new m.Binding(options);
+  } else {
+    this._binding = null;
+  }
+};
 
 module.exports = v;
