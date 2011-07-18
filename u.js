@@ -42,8 +42,6 @@ u.extend = function() {
   return target;  
 };
 
-
-
 // className
 var cls = u.cls = {
   has: function(elem, className) {

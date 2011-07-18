@@ -38,15 +38,20 @@ function v(markup, refs) {
           }
         });
         break;
+      case 'listeners':
+      case 'on':
+        for (var type in value) {
+          item.addEventListener(type, value[type]);
+        }
+        break;
       case 'text':
         item.appendChild(document.createTextNode(value));
         break;
-      case 'className':
-      case 'innerHTML':
-        item[key] = value;
+      case 'style':
+        item.style.cssText = style;
         break;
       default:
-        item.setAttribute(key, value);
+        item[key] = value;
     }
   }
   return element;
@@ -76,7 +81,7 @@ var Base = v.Base = function(markup) {
   this._init();
 };
 var bp = Base.prototype;
-Object.defineProperty(bp, 'isObject', { 
+Object.defineProperty(bp, 'isView', { 
   value: true, 
   configurable: true,
   enumerable: true });
@@ -84,11 +89,15 @@ Object.defineProperty(bp, 'dom', {
   writable: true, 
   configurable: true,
   enumerable: true });
-u.delegate.prop(bp, 'className', 'dom');
-u.delegate.prop(bp, 'parentNode', 'dom');
-u.delegate.prop(bp, 'children', 'dom');
-u.delegate.prop(bp, 'innerHTML', 'dom');
+
+[
+  'className', 'parentNode', 'children', 
+  'innerHTML', 'scrollLeft', 'scrollTop'
+].forEach(function(name) {
+   u.delegate.prop(bp, name, 'dom');
+});
 u.delegate.prop(bp, 'style', 'dom', 'style', { get: undefined });
+u.delegate.call(bp, 'getBoundingClientRect', 'dom');
 
 bp._setup = function(markup) {};
 
@@ -98,6 +107,17 @@ bp._createDom = function() {
 
 bp._init = function() {
   this.dom['data-view'] = this;
+};
+
+u.delegate.call(bp, 'addEventListener', 'dom');
+u.delegate.call(bp, 'removeEventListener', 'dom');
+bp.trigger = function(eventSpec) {
+  var e = document.createEvent("UIEvents");
+  e.type = eventSpec.type;
+  if (canBubble in eventSpec) e.canBubble = eventSpec.canBubble;
+  if (cancelable in eventSpec) e.cancelable = eventSpec.cancelable;
+  e.data = eventSpec.data;
+  this.dom.dispatchEvent(e);
 };
 
 bp.appendChild = function(child) {
