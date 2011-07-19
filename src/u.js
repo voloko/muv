@@ -37,14 +37,14 @@ u.bind = function(fun, context) {
       return fun.apply(context || this, args.concat(slice.call(arguments, 0)));
     } :
     function() {
-      return fn.apply(context || this, arguments);
+      return fun.apply(context || this, arguments);
     };
 };
 
 u.bindOnce = function(fun, context) {
   fun.huid = fun.huid || u.guid++;
   var bindingName = '__bind_' + fun.huid;
-  context[bindingName] = context[bindingName] || u.bind(fun.bind, context);
+  context[bindingName] = context[bindingName] || u.bind(fun, context);
   return context[bindingName];
 };
 

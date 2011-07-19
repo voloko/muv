@@ -20,13 +20,14 @@ function v(markup, refs) {
     var value = markup[key];
     switch (key) {
       case 'tag':
+      case 'fragment':
         break;
       case 'as':
-        refs && (refs[key] = value);
+        refs && (refs[value] = item);
         break;
       case 'aslist':
         if (refs) {
-          refs[key] ? (refs[key] = [value]) : refs[key].push(value);
+          refs[value] ? (refs[value] = [item]) : refs[value].push(item);
         }
         break;
       case 'children':
@@ -44,7 +45,7 @@ function v(markup, refs) {
         }
         break;
       case 'text':
-        value && item.nodeType != 3 && item.appendChild(document.createTextNode(value));
+        value && item.nodeType != 3 && item.appendChild(v({ text: value }));
         break;
       case 'style':
         item.style.cssText = value;
@@ -141,7 +142,7 @@ bp.insertBefore = function(child, refChild) {
 
 bp.replaceChild = function(child, refChild) {
   this.dom.replaceChild(child.dom || child, refChild.dom || refChild);
-  return child;
+  return refChild;
 };
 
 Object.defineProperty(bp, 'childViews', {
