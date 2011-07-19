@@ -50,54 +50,76 @@ m.Observable = {
 };
 
 
-m.Base = u.extend(m.Observable, {
-  triggerChanges: function(name) {
-    if (this.muteChanges) return;
-
-    this.trigger({
-      type: 'change.' + name,
-      model: this
-    });
-    this.trigger({
-      type: 'change',
-      name: name,
-      model: this
-    });
-  },
-
-  muteChanges: false
-});
-
-
 m.defineProperty = function(obj, propName, propDef) {
-  var storage = '_' + propName;
+  obj.propNames.push(propName);
 
   Object.defineProperty(obj, propName, u.extend({
     configurable: true,
     enumerable: true,
     set: function(value) {
       var oldValue = this[propName];
-      this[storage] = value;
+      this.propValues[propName] = value;
       if (oldValue != value) {
         this.triggerChanges(propName);
       }
     },
     get: function() {
-      return this[storage];
+      return this.propValues[propName];
     }
   }, propDef));
 };
 
-m.Biding = function(options) {
-  u.extend(this, options);
-  if (options.view && options.model) {
-    this.modelEvent || (this.modelEvent = 'change.' + this.modelProp);
-    this.view.addEventListener(this.viewEvent, u.bindOnce(this.updateModel, this));
-    this.model.addEventListener(this.modelEvent, u.bindOnce(this.updateView, this));
+m.defineProperties = function(obj, propDefs) {
+  for (var propName in propDefs) {
+    m.defineProperty(obj, propName, propDefs[propName]);
   }
 };
 
-u.extend(m.Biding.prototype, {
+
+var Base = m.Base = function(options) {
+  this.propValues = {};
+  options && u.extend(this, options);
+};
+
+var bp = Base.prototype;
+
+u.extend(bp, m.Observable);
+
+bp.propValues = {};
+bp.propNames = [];
+
+bp.triggerChanges = function(name) {
+  if (this.muteChanges) return;
+
+  this.trigger({
+    type: 'change.' + name,
+    model: this
+  });
+  this.trigger({
+    type: 'change',
+    name: name,
+    model: this
+  });
+};
+
+bp.muteChanges = false;
+
+m.defineProperty(bp, 'id');
+
+
+m.Binding = function(options) {
+  u.extend(this, options);
+  if (options.view && options.model) {
+    this.modelEvent || (this.modelEvent = 'change.' + this.modelProp);
+    if (this.modelProp) {
+      this.view.addEventListener(this.viewEvent, u.bindOnce(this.updateModel, this));
+    }
+    this.model.addEventListener(this.modelEvent, u.bindOnce(this.updateView, this));
+    this.updateView();
+  }
+};
+
+u.extend(m.Binding.prototype, {
   modelProp: 'value',
   viewProp: 'value',
   modelEvent: '',
@@ -105,7 +127,9 @@ u.extend(m.Biding.prototype, {
 
   destruct: function() {
     if (this.view && this.model) {
-      this.view.removeEventListener(this.viewEvent, u.bindOnce(this.updateModel, this));
+      if (this.modelProp) {
+        this.view.removeEventListener(this.viewEvent, u.bindOnce(this.updateModel, this));
+      }
       this.model.removeEventListener(this.modelEvent, u.bindOnce(this.updateView, this));
     }
   },
@@ -118,7 +142,9 @@ u.extend(m.Biding.prototype, {
 
   updateView: function(e) {
     this._lockUpdate(function() {
-      this.view[this.viewProp] = this.model[this.modelProp];
+      this.view[this.viewProp] = this.modelProp ?
+        this.model[this.modelProp] :
+        this.model;
     });
   },
 
@@ -135,6 +161,12 @@ u.extend(m.Biding.prototype, {
     }
   }
 });
+
+Base.createClass = function() {
+  var NewClass = u.createClass(Base);
+  NewClass.prototype.propNames = Base.prototype.propNames.slice(0);
+  return NewClass;
+};
 
 
 module.exports = m;

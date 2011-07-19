@@ -26,10 +26,25 @@ u.extend = function() {
   return target;
 };
 
+var slice = Array.prototype.slice;
+u.bind = function(fun, context) {
+  if (fun.bind) {
+    return fun.bind.apply(fun, slice.call(arguments, 1));
+  }
+  var args = slice.call(arguments, 2);
+  return args.length ?
+    function() {
+      return fun.apply(context || this, args.concat(slice.call(arguments, 0)));
+    } :
+    function() {
+      return fn.apply(context || this, arguments);
+    };
+};
+
 u.bindOnce = function(fun, context) {
   fun.huid = fun.huid || u.guid++;
   var bindingName = '__bind_' + fun.huid;
-  context[bindingName] = context[bindingName] || fun.bind(context);
+  context[bindingName] = context[bindingName] || u.bind(fun.bind, context);
   return context[bindingName];
 };
 
@@ -51,11 +66,24 @@ function _timer(fun, timeout, debounce) {
 }
 
 u.throttle = function(fun, timeout) {
-    return _timer(fun, timeout);
+  return _timer(fun, timeout);
 };
 
 u.debounce = function(fun, timeout) {
-    return _timer(fun, timeout, true);
+  return _timer(fun, timeout, true);
+};
+
+function tmp() {}
+
+u.createClass = function(Base) {
+  function NewClass() {
+    Base.apply(this, arguments);
+  };
+
+  NewClass.prototype = Object.create(Base.prototype);
+  NewClass.prototype.constructor = NewClass;
+  NewClass.createClass = u.bind(u.createClass, null, NewClass);
+  return NewClass;
 };
 
 
@@ -68,7 +96,7 @@ var cls = u.cls = {
   add: function(elem, classNames) {
     var result = elem.className;
     classNames.split(/\s+/).forEach(function(className) {
-      if (!cls.hasClass(elem, className)) {
+      if (!cls.has(elem, className)) {
         result += ' ' + className;
       }
     });
@@ -127,6 +155,9 @@ u.delegate = {
 u.is = {
   view: function(object) {
     return !!(object && object.isView);
+  },
+  node: function(object) {
+    return !!(object && 'nodeType' in object);
   },
   element: function(object) {
     return !!(object && object.nodeType == 1);

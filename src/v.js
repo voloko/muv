@@ -8,13 +8,13 @@ var m = require('./m');
 var _toString = Object.prototype.toString;
 
 function v(markup, refs) {
-  if (u.is.view(markup) || u.is.element(markup)) {
+  if (u.is.view(markup) || u.is.node(markup)) {
     return markup;
   }
 
   var item = markup.view ?
-    createView(markup) :
-    createElement(markup);
+    _createView(markup) :
+    _createNode(markup);
 
   for (var key in markup) {
     var value = markup[key];
@@ -31,11 +31,9 @@ function v(markup, refs) {
         break;
       case 'children':
         value.forEach(function(m) {
-          var child = d(m, refs);
-          if (!markup.view && u.is.view(child)) {
-            child.attachTo(item);
-          } else {
-            item.appendChild(child);
+          if (m) {
+            var child = v(m, refs);
+            item.appendChild(child.dom || child);
           }
         });
         break;
@@ -46,16 +44,16 @@ function v(markup, refs) {
         }
         break;
       case 'text':
-        item.appendChild(document.createTextNode(value));
+        value && item.nodeType != 3 && item.appendChild(document.createTextNode(value));
         break;
       case 'style':
-        item.style.cssText = style;
+        item.style.cssText = value;
         break;
       default:
         item[key] = value;
     }
   }
-  return element;
+  return item;
 }
 
 function _createView(markup) {
@@ -63,8 +61,11 @@ function _createView(markup) {
   return new cls(markup);
 }
 
-function _createElement(markup) {
-  var element = document.createElement(markup.tag);
+function _createNode(markup) {
+  return markup.fragment ? document.createDocumentFragment() :
+         markup.tag      ? document.createElement(markup.tag) :
+         markup.text     ? document.createTextNode(markup.text) :
+                           document.createElement('div');
 }
 
 v.nearest = function(element) {
@@ -91,7 +92,9 @@ bp.dom = null;
 
 [
   'className', 'parentNode', 'children',
-  'innerHTML', 'scrollLeft', 'scrollTop'
+  'innerHTML', 'scrollLeft', 'scrollTop',
+  'firstChild', 'lastChild', 'nextSibling',
+  'prevSibling'
 ].forEach(function(name) {
    u.delegate.prop(bp, name, 'dom');
 });
@@ -100,8 +103,10 @@ u.delegate.call(bp, 'getBoundingClientRect', 'dom');
 
 bp._setup = function(markup) {};
 
+bp.defaultClassName = '';
 bp._createDom = function(markup) {
   this.dom = v({ tag: markup.tag || 'div' });
+  this.defaultClassName && (this.className = this.defaultClassName);
 };
 
 bp._init = function() {
@@ -130,21 +135,14 @@ bp.removeChild = function(child) {
 };
 
 bp.insertBefore = function(child, refChild) {
-  this.dom.insertBefore(child.dom || child, refChild.dom, refChild);
+  this.dom.insertBefore(child.dom || child, refChild.dom || refChild);
   return child;
 };
 
 bp.replaceChild = function(child, refChild) {
-  this.dom.replaceChild(child.dom || child, refChild.dom, refChild);
+  this.dom.replaceChild(child.dom || child, refChild.dom || refChild);
   return child;
 };
-
-Object.defineProperty(bp, 'parentView', {
-  configurable: true,
-  enumerable: true,
-  get: function() {
-    return v.nearest(this.parentNode);
-  } });
 
 Object.defineProperty(bp, 'childViews', {
   configurable: true,
@@ -154,7 +152,14 @@ Object.defineProperty(bp, 'childViews', {
       return u.is.view(child);
     });
   } });
-  
+
+Object.defineProperty(bp, 'parentView', {
+  configurable: true,
+  enumerable: true,
+  get: function() {
+    return v.nearest(this.parentNode);
+  } });
+
 Object.defineProperty(bp, 'model', {
   configurable: true,
   enumerable: true,
@@ -162,11 +167,11 @@ Object.defineProperty(bp, 'model', {
     return this._binding && this._binding.model;
   },
   set: function(model) {
-    this.bind(model);
+    this.bindModel(model);
   } });
-  
+
 bp.defaultBindingOptions = {};
-bp.bind = function(model, options) {
+bp.bindModel = function(model, options) {
   if (this._binding) this._binding.destruct();
   if (model) {
     options = u.extend(this.defaultBindingOptions, options);
@@ -176,6 +181,11 @@ bp.bind = function(model, options) {
   } else {
     this._binding = null;
   }
+};
+
+
+Base.createClass = function() {
+  return u.createClass(Base);
 };
 
 module.exports = v;
