@@ -82,7 +82,7 @@ u.createClass = function(Base) {
 
   NewClass.prototype = Object.create(Base.prototype);
   NewClass.prototype.constructor = NewClass;
-  NewClass.createClass = u.bind(u.createClass, null, NewClass);
+  NewClass.createClass = u.bind(u.createClass, u, NewClass);
   return NewClass;
 };
 
@@ -146,6 +146,22 @@ u.delegate = {
     obj[funcName] = function() {
       return this[toObjName][toFuncName].apply(this[toObjName], arguments);
     };
+  }
+};
+
+
+u.alias = {
+  prop: function(obj, originalName, newName) {
+    Object.defineProperty(obj, newName, {
+      configurable: true,
+      enumerable: true,
+      get: function() {
+        return this[originalName];
+      },
+      set: function(value) {
+        this[originalName] = value;
+      }
+    });
   }
 };
 

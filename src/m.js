@@ -163,8 +163,9 @@ u.extend(m.Binding.prototype, {
 });
 
 Base.createClass = function() {
-  var NewClass = u.createClass(Base);
-  NewClass.prototype.propNames = Base.prototype.propNames.slice(0);
+  var NewClass = u.createClass(this);
+  NewClass.prototype.propNames = [].concat(Base.prototype.propNames);
+  NewClass.createClass = u.bind(this.createClass, this, NewClass);
   return NewClass;
 };
 
