@@ -177,6 +177,9 @@ u.is = {
   },
   element: function(object) {
     return !!(object && object.nodeType == 1);
+  },
+  scalar: function(object) {
+    return u.is.number(object) || u.is.string(object) || u.is.bool(object);
   }
 };
 
@@ -184,7 +187,6 @@ u.is = {
   ['fun',   'Function'],
   ['array',  'Array'],
   ['bool',   'Boolean'],
-  ['number', 'Number'],
   ['string', 'String'],
   ['date',   'Date'],
   ['number', 'Number']

@@ -45,7 +45,8 @@ function v(markup, refs) {
         }
         break;
       case 'text':
-        value && item.nodeType != 3 && item.appendChild(v({ text: value }));
+        value && item.nodeType != 3 && 
+          item.appendChild(document.createTextNode(markup.text));
         break;
       case 'style':
         item.style.cssText = value;
@@ -118,10 +119,8 @@ u.delegate.call(bp, 'addEventListener', 'dom');
 u.delegate.call(bp, 'removeEventListener', 'dom');
 bp.trigger = function(eventSpec) {
   var e = document.createEvent("UIEvents");
-  e.type = eventSpec.type;
-  if (canBubble in eventSpec) e.canBubble = eventSpec.canBubble;
-  if (cancelable in eventSpec) e.cancelable = eventSpec.cancelable;
-  e.data = eventSpec.data;
+  e.initUIEvent(eventSpec.type, eventSpec.canBubble, eventSpec.cancelable, window);
+  e.data = eventSpec;
   this.dom.dispatchEvent(e);
 };
 
