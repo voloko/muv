@@ -78,19 +78,26 @@ v.nearest = function(element) {
   return null;
 };
 
+v.destructAll = function(element) {
+  var items = element.querySelectorAll('[data-isView]');
+  for (var i = 0; i < items.length; i++) {
+    items[i]['data-view'].destruct();
+  };
+};
+
 
 var Base = v.Base = function(markup) {
   this._setup(markup);
   this._createDom(markup);
   this._init();
 };
-var bp = Base.prototype;
-Object.defineProperty(bp, 'isView', {
+var p = Base.prototype;
+Object.defineProperty(p, 'isView', {
   value: true,
   configurable: true,
   enumerable: true });
 
-bp.dom = null;
+p.dom = null;
 
 [
   'className', 'parentNode', 'children',
@@ -98,53 +105,54 @@ bp.dom = null;
   'firstChild', 'lastChild', 'nextSibling',
   'prevSibling'
 ].forEach(function(name) {
-   u.delegate.prop(bp, name, 'dom');
+   u.delegate.prop(p, name, 'dom');
 });
-u.delegate.prop(bp, 'style', 'dom', 'style', { get: undefined });
-u.delegate.call(bp, 'getBoundingClientRect', 'dom');
+u.delegate.prop(p, 'style', 'dom', 'style', { get: undefined });
+u.delegate.call(p, 'getBoundingClientRect', 'dom');
 
-bp._setup = function(markup) {};
+p._setup = function(markup) {};
 
-bp.defaultClassName = '';
-bp._createDom = function(markup) {
+p.defaultClassName = '';
+p._createDom = function(markup) {
   this.dom = v({ tag: markup.tag || 'div' });
   this.defaultClassName && (this.className = this.defaultClassName);
 };
 
-bp._init = function() {
+p._init = function() {
   this.dom['data-view'] = this;
+  this.dom.setAttribute('data-isView', true);
 };
 
-u.delegate.call(bp, 'addEventListener', 'dom');
-u.delegate.call(bp, 'removeEventListener', 'dom');
-bp.trigger = function(eventSpec) {
+u.delegate.call(p, 'addEventListener', 'dom');
+u.delegate.call(p, 'removeEventListener', 'dom');
+p.trigger = function(eventSpec) {
   var e = document.createEvent("UIEvents");
   e.initUIEvent(eventSpec.type, eventSpec.canBubble, eventSpec.cancelable, window);
   e.data = eventSpec;
   this.dom.dispatchEvent(e);
 };
 
-bp.appendChild = function(child) {
+p.appendChild = function(child) {
   this.dom.appendChild(child.dom || child);
   return child;
 };
 
-bp.removeChild = function(child) {
+p.removeChild = function(child) {
   this.dom.removeChild(child.dom || child);
   return child;
 };
 
-bp.insertBefore = function(child, refChild) {
+p.insertBefore = function(child, refChild) {
   this.dom.insertBefore(child.dom || child, refChild.dom || refChild);
   return child;
 };
 
-bp.replaceChild = function(child, refChild) {
+p.replaceChild = function(child, refChild) {
   this.dom.replaceChild(child.dom || child, refChild.dom || refChild);
   return refChild;
 };
 
-Object.defineProperty(bp, 'childViews', {
+Object.defineProperty(p, 'childViews', {
   configurable: true,
   enumerable: true,
   get: function() {
@@ -153,14 +161,14 @@ Object.defineProperty(bp, 'childViews', {
     });
   } });
 
-Object.defineProperty(bp, 'parentView', {
+Object.defineProperty(p, 'parentView', {
   configurable: true,
   enumerable: true,
   get: function() {
     return v.nearest(this.parentNode);
   } });
 
-Object.defineProperty(bp, 'model', {
+Object.defineProperty(p, 'model', {
   configurable: true,
   enumerable: true,
   get: function() {
@@ -170,8 +178,8 @@ Object.defineProperty(bp, 'model', {
     this.bindModel(model);
   } });
 
-bp.defaultBindingOptions = {};
-bp.bindModel = function(model, options) {
+p.defaultBindingOptions = {};
+p.bindModel = function(model, options) {
   if (this._binding) this._binding.destruct();
   if (model) {
     options = u.extend(this.defaultBindingOptions, options);
@@ -181,6 +189,12 @@ bp.bindModel = function(model, options) {
   } else {
     this._binding = null;
   }
+};
+
+p.destruct = function() {
+  if (this.destructed) return;
+  this.destructed = true;
+  if (this._binding) this._binding.destruct();
 };
 
 

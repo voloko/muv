@@ -114,11 +114,15 @@ m.defineProperty(bp, 'id');
 m.Binding = function(options) {
   u.extend(this, options);
   if (options.view && options.model) {
-    this.modelEvent || (this.modelEvent = 'change.' + this.modelProp);
+    this.modelEvents || (this.modelEvents = ['change.' + this.modelProp]);
     if (this.modelProp) {
-      this.view.addEventListener(this.viewEvent, u.bindOnce(this.updateModel, this));
+      this.viewEvents.forEach(function(name) {
+        this.view.addEventListener(name, u.bindOnce(this.updateModel, this));
+      }, this);
     }
-    this.model.addEventListener(this.modelEvent, u.bindOnce(this.updateView, this));
+    this.modelEvents.forEach(function(name) {
+      this.model.addEventListener(name, u.bindOnce(this.updateView, this));
+    }, this);
     this.updateView();
   }
 };
@@ -126,15 +130,19 @@ m.Binding = function(options) {
 u.extend(m.Binding.prototype, {
   modelProp: 'value',
   viewProp: 'value',
-  modelEvent: '',
-  viewEvent: 'blur',
+  modelEvents: null,
+  viewEvents: ['blur'],
 
   destruct: function() {
     if (this.view && this.model) {
       if (this.modelProp) {
-        this.view.removeEventListener(this.viewEvent, u.bindOnce(this.updateModel, this));
+        this.viewEvents.forEach(function(name) {
+          this.view.removeEventListener(name, u.bindOnce(this.updateModel, this));
+        }, this);
       }
-      this.model.removeEventListener(this.modelEvent, u.bindOnce(this.updateView, this));
+      this.modelEvents.forEach(function(name) {
+        this.model.removeEventListener(name, u.bindOnce(this.updateView, this));
+      }, this);
     }
   },
 
