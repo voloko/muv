@@ -78,7 +78,11 @@ m.defineProperties = function(obj, propDefs) {
 
 var Base = m.Base = function(options) {
   this.propValues = {};
-  options && u.extend(this, options);
+  if (options) {
+    this.muteChanges = true;
+    u.extend(this, options);
+    this.muteChanges = false;
+  }
 };
 
 var bp = Base.prototype;
